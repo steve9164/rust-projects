@@ -5,7 +5,7 @@ mod tests {
     #[test]
     fn test_board() {
         let board = Board::new(8, 8);
-        assert_eq!(*board.get_board_square(&Coord { x: 0, y: 0 }), false);
+        assert_eq!(board.get_board_square(&Coord { x: 0, y: 0 }), Cell::Dead);
     }
 
     #[test]
@@ -20,14 +20,14 @@ mod tests {
     #[test]
     fn test_neighbour_count() {
         let mut board = Board::new(8, 8);
-        *board.get_board_square_mut(&Coord { x: 3, y: 3 }) = true;
+        board.set_board_square(&Coord { x: 3, y: 3 }, Cell::Alive);
         assert_eq!(board.count_alive_neighbours(&Coord { x: 2, y: 3 }), 1);
     }
 
     #[test]
     fn test_neighbour_count_excludes_itself() {
         let mut board = Board::new(8, 8);
-        *board.get_board_square_mut(&Coord { x: 2, y: 3 }) = true;
+        board.set_board_square(&Coord { x: 2, y: 3 }, Cell::Alive);
         assert_eq!(board.count_alive_neighbours(&Coord { x: 2, y: 3 }), 0);
     }
 
@@ -50,7 +50,7 @@ mod tests {
                 Coord { x: 6, y: 5 },
                 Coord { x: 6, y: 6 },
             ],
-            true,
+            Cell::Alive,
         );
         let mut board2 = board.clone();
         game_of_life_step(&board, &mut board2);
@@ -68,7 +68,7 @@ mod tests {
                 Coord { x: 1, y: 7 },
                 Coord { x: 1, y: 5 },
             ],
-            true,
+            Cell::Alive,
         );
         let mut board2 = board.clone();
         game_of_life_step(&board, &mut board2);
@@ -85,7 +85,7 @@ mod tests {
                 Coord { x: 3, y: 6 },
                 Coord { x: 3, y: 7 },
             ],
-            true,
+            Cell::Alive,
         );
         let mut board2 = board.clone();
         let mut board3 = board.clone();
@@ -104,7 +104,7 @@ mod tests {
         let coords: Vec<Coord> = (0..1023)
             .flat_map(|x| vec![Coord { x, y: 256 }, Coord { x, y: 768 }])
             .collect();
-        set_squares_to(&mut board, &coords[..], true);
+        set_squares_to(&mut board, &coords[..], Cell::Alive);
         let mut board_b = board.clone();
         // let boards = [&mut board, &mut board_b];
 
@@ -121,32 +121,57 @@ mod tests {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+
+mod utils;
+
+extern crate wasm_bindgen;
+use wasm_bindgen::prelude::*;
+
+// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
+// allocator.
+#[cfg(feature = "wee_alloc")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+
+#[wasm_bindgen]
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Cell {
+    Dead = 0,
+    Alive = 1,
+}
+
+#[wasm_bindgen]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Board {
     pub width: usize,
     pub height: usize,
-    squares: Vec<bool>,
+    squares: Vec<Cell>,
 }
 
+#[wasm_bindgen]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Coord {
     pub x: usize,
     pub y: usize,
 }
 
+#[wasm_bindgen]
 impl Board {
     pub fn new(width: usize, height: usize) -> Board {
         Board {
             width,
             height,
-            squares: vec![false; width * height],
+            squares: vec![Cell::Dead; width * height],
         }
     }
-    pub fn get_board_square(&self, c: &Coord) -> &bool {
-        &self.squares[c.y * self.width + c.x]
+    pub fn get_board_square(&self, c: &Coord) -> Cell {
+        self.squares[c.y * self.width + c.x]
     }
 
-    pub fn get_board_square_mut(&mut self, c: &Coord) -> &mut bool {
-        &mut self.squares[c.y * self.width + c.x]
+    pub fn set_board_square(&mut self, c: &Coord, val: Cell) {
+        self.squares[c.y * self.width + c.x] = val;
     }
 
     pub fn count_alive_neighbours(&self, c: &Coord) -> u8 {
@@ -166,7 +191,7 @@ impl Board {
 
         for x in min_x..=max_x {
             for y in min_y..=max_y {
-                if !(x == c.x && y == c.y) && *self.get_board_square(&Coord { x, y }) {
+                if !(x == c.x && y == c.y) && self.get_board_square(&Coord { x, y }) == Cell::Alive {
                     count += 1;
                 };
             }
@@ -192,20 +217,33 @@ pub fn game_of_life_step(b: &Board, next_board: &mut Board) {
             coord = Coord { x, y };
             alive_neighbours = b.count_alive_neighbours(&coord);
             // Game of life rules, from Wikipedia
-            if *b.get_board_square(&coord) {
+            if b.get_board_square(&coord) == Cell::Alive {
                 // Live cell only continues living if it has 2 or 3 living neighbours
-                *next_board.get_board_square_mut(&coord) =
-                    alive_neighbours == 2 || alive_neighbours == 3;
+                next_board.set_board_square(
+                    &coord,
+                    if alive_neighbours == 2 || alive_neighbours == 3 {
+                        Cell::Alive
+                    } else {
+                        Cell::Dead
+                    },
+                );
             } else {
                 // Dead cell only becomes live with 3 live neighbours
-                *next_board.get_board_square_mut(&coord) = alive_neighbours == 3;
+                next_board.set_board_square(
+                    &coord,
+                    if alive_neighbours == 3 {
+                        Cell::Alive
+                    } else {
+                        Cell::Dead
+                    },
+                );
             }
         }
     }
 }
 
-pub fn set_squares_to(board: &mut Board, coords: &[Coord], val: bool) {
+pub fn set_squares_to(board: &mut Board, coords: &[Coord], val: Cell) {
     for coord in coords.iter() {
-        *board.get_board_square_mut(coord) = val;
+        board.set_board_square(coord, val);
     }
 }
