@@ -9,8 +9,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - working-directory: life-lib
     - name: Build
+      working-directory: life-lib
       run: cargo build --verbose
     - name: Run tests
+      working-directory: life-lib
       run: cargo test --verbose
