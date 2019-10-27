@@ -17,7 +17,7 @@ fn main() {
         .collect();
     for coord in coords.iter()
     {
-        board.set_board_square(coord, Cell::Alive);
+        board.set_board_square(coord, life::Cell::Alive);
     }
     let mut board_b = board.clone();
     for gen in (0..).take(1000) {

@@ -1,6 +1,11 @@
+// #![feature(test)]
+// extern crate test;
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    // use test::Bencher;
 
     #[test]
     fn test_board() {
@@ -42,10 +47,10 @@ mod tests {
     #[test]
     fn test_game_step_block_is_stable() {
         let mut board = Board::new(8, 8);
-        board.set_board_square(Coord { x: 5, y: 5 }, Cell::Alive);
-        board.set_board_square(Coord { x: 5, y: 6 }, Cell::Alive);
-        board.set_board_square(Coord { x: 6, y: 5 }, Cell::Alive);
-        board.set_board_square(Coord { x: 6, y: 6 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 5, y: 5 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 5, y: 6 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 6, y: 5 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 6, y: 6 }, Cell::Alive);
         let mut board2 = board.clone();
         game_of_life_step(&board, &mut board2);
         assert_eq!(board.squares, board2.squares);
@@ -54,10 +59,10 @@ mod tests {
     #[test]
     fn test_game_step_tub_is_stable() {
         let mut board = Board::new(8, 8);
-        board.set_board_square(Coord { x: 0, y: 6 }, Cell::Alive);
-        board.set_board_square(Coord { x: 2, y: 6 }, Cell::Alive);
-        board.set_board_square(Coord { x: 1, y: 7 }, Cell::Alive);
-        board.set_board_square(Coord { x: 1, y: 5 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 0, y: 6 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 2, y: 6 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 1, y: 7 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 1, y: 5 }, Cell::Alive);
 
         let mut board2 = board.clone();
         game_of_life_step(&board, &mut board2);
@@ -67,9 +72,9 @@ mod tests {
     #[test]
     fn test_game_step_blinker() {
         let mut board = Board::new(8, 8);
-        board.set_board_square(Coord { x: 3, y: 5 }, Cell::Alive);
-        board.set_board_square(Coord { x: 3, y: 6 }, Cell::Alive);
-        board.set_board_square(Coord { x: 3, y: 7 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 3, y: 5 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 3, y: 6 }, Cell::Alive);
+        board.set_board_square(&Coord { x: 3, y: 7 }, Cell::Alive);
 
         let mut board2 = board.clone();
         let mut board3 = board.clone();
@@ -82,29 +87,28 @@ mod tests {
         assert_ne!(board.squares, board2.squares);
     }
 
-    #[test]
-    fn test_game_step_large_board() {
-        let mut board = Board::new(1024, 1024);
-        let coords: Vec<Coord> = (0..1023)
-            .flat_map(|x| vec![Coord { x, y: 256 }, Coord { x, y: 768 }])
-            .collect();
-        for coord in coords.iter() {
-            board.set_board_square(coord, Cell::Alive);
-        }
-        let mut board_b = board.clone();
-        // let boards = [&mut board, &mut board_b];
+    // #[bench]
+    // fn test_game_step_large_board(b: &mut Bencher) {
+    //     b.iter(|| {
+    //         let mut board = Board::new(1024, 1024);
+    //         let coords: Vec<Coord> = (0..1023)
+    //             .flat_map(|x| vec![Coord { x, y: 256 }, Coord { x, y: 768 }])
+    //             .collect();
+    //         for coord in coords.iter() {
+    //             board.set_board_square(coord, Cell::Alive);
+    //         }
+    //         let mut board_b = board.clone();
 
-        for gen in (0..).take(100) {
-            if gen % 2 == 0 {
-                game_of_life_step(&board, &mut board_b);
-            } else {
-                game_of_life_step(&board_b, &mut board);
-            }
-            if board.squares == board_b.squares {
-                println!("Becomes stable after {} generations", gen);
-            }
-        }
-    }
+    //         for gen in 0..5 {
+    //             if gen % 2 == 0 {
+    //                 game_of_life_step(&board, &mut board_b);
+    //             } else {
+    //                 game_of_life_step(&board_b, &mut board);
+    //             }
+    //         }
+    //         board
+    //     })
+    // }
 }
 
 mod utils;
@@ -159,10 +163,13 @@ impl Board {
             squares: vec![Cell::Dead; width * height],
         }
     }
+
+    #[inline]
     pub fn get_board_square(&self, c: &Coord) -> Cell {
         self.squares[c.y * self.width + c.x]
     }
 
+    #[inline]
     pub fn set_board_square(&mut self, c: &Coord, val: Cell) {
         self.squares[c.y * self.width + c.x] = val;
     }
