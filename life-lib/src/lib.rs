@@ -42,16 +42,10 @@ mod tests {
     #[test]
     fn test_game_step_block_is_stable() {
         let mut board = Board::new(8, 8);
-        set_squares_to(
-            &mut board,
-            &[
-                Coord { x: 5, y: 5 },
-                Coord { x: 5, y: 6 },
-                Coord { x: 6, y: 5 },
-                Coord { x: 6, y: 6 },
-            ],
-            Cell::Alive,
-        );
+        board.set_board_square(Coord { x: 5, y: 5 }, Cell::Alive);
+        board.set_board_square(Coord { x: 5, y: 6 }, Cell::Alive);
+        board.set_board_square(Coord { x: 6, y: 5 }, Cell::Alive);
+        board.set_board_square(Coord { x: 6, y: 6 }, Cell::Alive);
         let mut board2 = board.clone();
         game_of_life_step(&board, &mut board2);
         assert_eq!(board.squares, board2.squares);
@@ -60,16 +54,11 @@ mod tests {
     #[test]
     fn test_game_step_tub_is_stable() {
         let mut board = Board::new(8, 8);
-        set_squares_to(
-            &mut board,
-            &[
-                Coord { x: 0, y: 6 },
-                Coord { x: 2, y: 6 },
-                Coord { x: 1, y: 7 },
-                Coord { x: 1, y: 5 },
-            ],
-            Cell::Alive,
-        );
+        board.set_board_square(Coord { x: 0, y: 6 }, Cell::Alive);
+        board.set_board_square(Coord { x: 2, y: 6 }, Cell::Alive);
+        board.set_board_square(Coord { x: 1, y: 7 }, Cell::Alive);
+        board.set_board_square(Coord { x: 1, y: 5 }, Cell::Alive);
+
         let mut board2 = board.clone();
         game_of_life_step(&board, &mut board2);
         assert_eq!(board.squares, board2.squares);
@@ -78,15 +67,10 @@ mod tests {
     #[test]
     fn test_game_step_blinker() {
         let mut board = Board::new(8, 8);
-        set_squares_to(
-            &mut board,
-            &[
-                Coord { x: 3, y: 5 },
-                Coord { x: 3, y: 6 },
-                Coord { x: 3, y: 7 },
-            ],
-            Cell::Alive,
-        );
+        board.set_board_square(Coord { x: 3, y: 5 }, Cell::Alive);
+        board.set_board_square(Coord { x: 3, y: 6 }, Cell::Alive);
+        board.set_board_square(Coord { x: 3, y: 7 }, Cell::Alive);
+
         let mut board2 = board.clone();
         let mut board3 = board.clone();
         let mut board4 = board.clone();
@@ -104,7 +88,9 @@ mod tests {
         let coords: Vec<Coord> = (0..1023)
             .flat_map(|x| vec![Coord { x, y: 256 }, Coord { x, y: 768 }])
             .collect();
-        set_squares_to(&mut board, &coords[..], Cell::Alive);
+        for coord in coords.iter() {
+            board.set_board_square(coord, Cell::Alive);
+        }
         let mut board_b = board.clone();
         // let boards = [&mut board, &mut board_b];
 
@@ -121,7 +107,6 @@ mod tests {
     }
 }
 
-
 mod utils;
 
 extern crate wasm_bindgen;
@@ -132,7 +117,6 @@ use wasm_bindgen::prelude::*;
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
 
 #[wasm_bindgen]
 #[repr(u8)]
@@ -158,7 +142,16 @@ pub struct Coord {
 }
 
 #[wasm_bindgen]
+impl Coord {
+    #[wasm_bindgen(constructor)]
+    pub fn new(x: usize, y: usize) -> Coord {
+        Coord { x, y }
+    }
+}
+
+#[wasm_bindgen]
 impl Board {
+    #[wasm_bindgen(constructor)]
     pub fn new(width: usize, height: usize) -> Board {
         Board {
             width,
@@ -191,7 +184,8 @@ impl Board {
 
         for x in min_x..=max_x {
             for y in min_y..=max_y {
-                if !(x == c.x && y == c.y) && self.get_board_square(&Coord { x, y }) == Cell::Alive {
+                if !(x == c.x && y == c.y) && self.get_board_square(&Coord { x, y }) == Cell::Alive
+                {
                     count += 1;
                 };
             }
@@ -200,6 +194,7 @@ impl Board {
     }
 }
 
+#[wasm_bindgen]
 pub fn game_of_life_step(b: &Board, next_board: &mut Board) {
     assert!(
         b.width == next_board.width,
@@ -239,11 +234,5 @@ pub fn game_of_life_step(b: &Board, next_board: &mut Board) {
                 );
             }
         }
-    }
-}
-
-pub fn set_squares_to(board: &mut Board, coords: &[Coord], val: Cell) {
-    for coord in coords.iter() {
-        board.set_board_square(coord, val);
     }
 }

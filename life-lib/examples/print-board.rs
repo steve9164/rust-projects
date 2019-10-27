@@ -15,10 +15,11 @@ fn main() {
     let coords: Vec<life::Coord> = (0..256)
         .flat_map(|x| vec![life::Coord { x, y: 32 }, life::Coord { x, y: 224 }])
         .collect();
-    life::set_squares_to(&mut board, &coords[..], life::Cell::Alive);
+    for coord in coords.iter()
+    {
+        board.set_board_square(coord, Cell::Alive);
+    }
     let mut board_b = board.clone();
-    // let boards = [&mut board, &mut board_b];
-
     for gen in (0..).take(1000) {
         if gen % 2 == 0 {
             life::game_of_life_step(&board, &mut board_b);
