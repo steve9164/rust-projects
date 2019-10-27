@@ -1,0 +1,17 @@
+name: Rust
+
+on: [push]
+
+jobs:
+  build-life-lib:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      working-directory: life-lib
+      run: cargo build --verbose
+    - name: Run tests
+      working-directory: life-lib
+      run: cargo test --verbose
