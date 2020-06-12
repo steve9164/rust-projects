@@ -15,7 +15,7 @@ mod tests {
 
     #[test]
     fn test_neighbour_count_corners() {
-        let mut board = Board::new(8, 8);
+        let board = Board::new(8, 8);
         assert_eq!(board.count_alive_neighbours(&Coord { x: 0, y: 0 }), 0);
         assert_eq!(board.count_alive_neighbours(&Coord { x: 7, y: 0 }), 0);
         assert_eq!(board.count_alive_neighbours(&Coord { x: 0, y: 7 }), 0);
